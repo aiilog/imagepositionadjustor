@@ -1,0 +1,256 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=NO">
+
+    <title></title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <div class="headers">
+        <h1>Image Locator System</h1>
+    </div>
+
+    <div class="canvascontainer">
+        <h1>Click Image then Drag</h1>
+        <canvas id="canvas" width="512" height="512" style="border: 1px solid black"></canvas>
+    </div>
+
+    <div class="controlpan">
+        <div class="sizepan sectionpan">
+            <h2>Size</h2>
+            <div class="content">
+                Width
+                <input type="number" class="numberinput" value="512" id="width"
+                            onblur="if(this.value==''){ this.value='512'; this.style.color='#BBB';}"
+                            onfocus="if(this.value=='512'){ this.value=''; this.style.color='#000';}"
+                            style="color:#BBB;" maxlength="4"/>
+                Height
+                <input type="number" class="numberinput" value="512" id="height"
+                            onblur="if(this.value==''){ this.value='512'; this.style.color='#BBB';}"
+                            onfocus="if(this.value=='512'){ this.value=''; this.style.color='#000';}"
+                            style="color:#BBB;" maxlength="4"/>
+
+                <button id="sizechange" onclick="resize()">Change</button>
+            </div>
+            
+        </div>
+
+        <div class="bgimg sectionpan">
+            <h2>Background</h2>
+            <div class="content">
+                <label for="bgInput">Select Image</label>
+                <input id="bgInput" type="file" accept="image/*" hidden>
+                <label for="removebg">Remove</label>
+                <button id="removebg" onclick="removebg()" hidden>
+            </div>
+            
+        </div>
+        
+        <div class="layerpan sectionpan">
+            <h2>Layer</h2>
+            <div class="content">
+                <label for="layerinput">Add Images</label>
+                <input type="file" id="layerinput" accept="image/*" hidden>
+                <label for="output-layer">Download Layer</label>
+                <button id="output-layer" onclick="dllayer()" hidden>
+            </div>
+        </div>
+
+        
+        <div class="coordinatepan sectionpan">
+            <div class="content">
+                Coordinate-X
+                <input type="number" class="numberinput" id="coord-x" maxlength="4"/>
+                <br>
+                Coordinate-Y
+                <input type="number" class="numberinput" id="coord-y" maxlength="4"/>
+            </div>
+            
+        </div>
+
+        <button id="dlall" onclick="downloadImg()">Download All</button>
+    </div>
+    
+    <div class="canvascontainer">
+        
+    </div>
+    
+    
+    
+</body>
+<script>
+    var canvas, context;
+    var layer_img = new Image();
+    var bg_img = new Image();
+    var isDraggable = false;
+
+    var currentX = 0;
+    var currentY = 0;
+    
+    var cx = document.getElementById('coord-x');
+    var cy = document.getElementById('coord-y');
+
+    window.onload = function() {
+        canvas = document.getElementById("canvas");
+        context = canvas.getContext("2d");
+
+        currentX = canvas.width / 2;
+        currentY = canvas.height / 2;
+        };
+
+    function _Go() {
+        _MouseEvents();
+
+        setInterval(function() {
+            _ResetCanvas();
+            _DrawImage();
+        }, 1000 / 30);
+    }
+
+    function _ResetCanvas() {
+        context.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function _MouseEvents() {
+        canvas.onmousedown = function(e) {
+
+            var mouseX = e.pageX - this.offsetLeft;
+            var mouseY = e.pageY - this.offsetTop;
+
+
+            if (mouseX >= (currentX - layer_img.width / 2) &&
+                mouseX <= (currentX + layer_img.width / 2) &&
+                mouseY >= (currentY - layer_img.height / 2) &&
+                mouseY <= (currentY + layer_img.height / 2)) {
+                isDraggable = true;
+                //currentX = mouseX;
+                //currentY = mouseY;
+            }
+
+            console.log(mouseX + ">/" + (currentX - layer_img.width / 2));
+            console.log(mouseX + "</" + (currentX + layer_img.width / 2));
+            console.log(mouseY + ">/" + (currentY - layer_img.height / 2));
+            console.log(mouseY + "</" + (currentY + layer_img.height / 2));
+        };
+        canvas.onmousemove = function(e) {
+
+            if (isDraggable) {
+                currentX = e.pageX - this.offsetLeft;
+                currentY = e.pageY - this.offsetTop;
+                cx.value = currentX;
+                cy.value = currentY;
+            }
+        };
+        canvas.onmouseup = function(e) {
+            isDraggable = false;
+        };
+        canvas.onmouseout = function(e) {
+            isDraggable = false;
+        };
+    }
+
+    function _DrawImage() {
+        if (bg_img != "") {
+            context.drawImage(bg_img, 0, 0);
+        }
+        context.drawImage(layer_img, currentX - (layer_img.width / 2), currentY - (layer_img.height / 2));
+    }
+
+    var downloadImg = function() {
+        var link = document.createElement('a');
+        link.download = 'filename.png';
+        link.href = document.getElementById('canvas').toDataURL()
+        link.click();
+    }
+
+    let imgInput = document.getElementById('layerinput');
+    imgInput.addEventListener('change', function(e) {
+        if (e.target.files) {
+            let imageFile = e.target.files[0]; //here we get the image file
+            var reader = new FileReader();
+            reader.readAsDataURL(imageFile);
+            reader.onloadend = function(e) {
+                var myImage = new Image(); // Creates image object
+                myImage.src = e.target.result; // Assigns converted image to image object
+                myImage.onload = function(ev) {
+                    cx.value = currentX;
+                    cy.value = currentY;
+                    var myCanvas = document.getElementById("canvas"); // Creates a canvas object
+                    var myContext = myCanvas.getContext("2d"); // Creates a contect object
+                    myContext.drawImage(myImage, 0, 0); // Draws the image on canvas
+                    let imgData = myCanvas.toDataURL("image/jpeg", 0.75); // Assigns image base64 string in jpeg format to a variable
+                    layer_img = myImage;
+                    _Go();
+                }
+            }
+        }
+    });
+
+    let bgInput = document.getElementById('bgInput');
+    bgInput.addEventListener('change', function(e) {
+        if (e.target.files) {
+            let imageFile = e.target.files[0]; //here we get the image file
+            var reader = new FileReader();
+            reader.readAsDataURL(imageFile);
+            reader.onloadend = function(e) {
+                bg_img = e.target.result;
+                var myImage = new Image(); // Creates image object
+                myImage.src = e.target.result; // Assigns converted image to image object
+                myImage.onload = function(ev) {
+                    var myCanvas = document.getElementById("canvas"); // Creates a canvas object
+                    var myContext = myCanvas.getContext("2d"); // Creates a contect object
+                    myContext.drawImage(myImage, 0, 0); // Draws the image on canvas
+                    let imgData = myCanvas.toDataURL("image/jpeg", 0.75); // Assigns image base64 string in jpeg format to a variable
+                    bg_img = myImage;
+                }
+            }
+        }
+    });
+
+    function resize() {
+        var c = document.getElementById('canvas');
+        c.width = document.getElementById('width').value;
+        c.height = document.getElementById('height').value;
+        currentX = canvas.width / 2;
+        currentY = canvas.height / 2;
+    }
+
+    cx.addEventListener("change", function() {
+        currentX = cx.value;
+    });
+
+    cy.addEventListener("change", function() {
+        currentY = cy.value;
+    });
+
+    function dllayer() {
+        var temp = document.createElement("canvas");
+        temp.setAttribute("id", "temp");
+
+        // Set the temp width and height
+        temp.width = canvas.width;
+        temp.height = canvas.height;
+
+        // Get the temp context
+        var ctx = temp.getContext("2d");
+
+        // Draw some content on the temp
+        ctx.drawImage(layer_img, currentX - (layer_img.width / 2), currentY - (layer_img.height / 2))
+
+        var link = document.createElement('a');
+        link.download = 'filename.png';
+        link.href = ctx.canvas.toDataURL();
+        link.click();
+    }
+
+    function removebg() {
+        bg_img = "";
+    }
+
+</script>
+
+</html>
